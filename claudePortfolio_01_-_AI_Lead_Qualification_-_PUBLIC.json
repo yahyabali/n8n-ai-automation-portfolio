@@ -1,0 +1,1215 @@
+{
+  "name": "Portfolio 01 - AI Lead Qualification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "portfolio/lead",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        112
+      ],
+      "id": "e9444b15-898e-4b39-9dbb-7fc32e208166",
+      "name": "ReceiveLead"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3f6853da-d719-45eb-9c08-c83d6ab2f9cf",
+              "leftValue": "={{ $json.body.name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "76b31fea-098f-4af6-af83-0c5e092bea42",
+              "leftValue": "={{ $json.body.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "c02af5c1-66f6-4e4f-9780-d7814649d493",
+              "leftValue": "={{ $json.body.message }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        112
+      ],
+      "id": "fc7506c6-7ee0-4c23-819e-f5960802a694",
+      "name": "ValidateLead"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a sales lead qualification assistant.\n\nAnalyse this incoming lead:\n\nName: {{ $json.body.name }}\nEmail: {{ $json.body.email }}\nCompany: {{ $json.body.company }}\nMessage: {{ $json.body.message }}\nBudget: {{ $json.body.budget }}\n\nReturn ONLY valid JSON in this exact format:\n\n{\n  \"lead_score\": 0,\n  \"priority\": \"hot\",\n  \"intent\": \"\",\n  \"reason\": \"\"\n}\n\nRules:\n- lead_score must be an integer from 0 to 100\n- priority must be one of: hot, warm, low\n- hot = strong buying intent, clear business need, good budget or urgency\n- warm = some interest but unclear timing, budget, or need\n- low = weak intent, vague enquiry, unsuitable lead, or little buying signal\n- intent should be a short category such as \"automation project\", \"consulting\", \"support\", or \"general enquiry\"\n- reason should be one short sentence\n- Do not include markdown or any text outside the JSON",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        448,
+        -192
+      ],
+      "id": "1428e81f-a8af-487f-ac41-3ff96e45cac4",
+      "name": "QualifyLeadAI"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        528,
+        48
+      ],
+      "id": "5c19689f-a3c6-445d-8b74-c882a495b7ba",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: JSON.parse($json.text)\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -80
+      ],
+      "id": "dec0cc45-adb2-44fd-834d-eef03fddb27c",
+      "name": "ParseAIResult"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.priority }}",
+                    "rightValue": "hot",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e0565389-d405-47c2-a50d-fa52e438f154"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Hot"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0443b528-16ce-4ccb-83ee-14b34840bb93",
+                    "leftValue": "={{ $json.priority }}",
+                    "rightValue": "warm",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Warm"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ef1adc52-0ec6-4acf-8e69-c422ac680ce6",
+                    "leftValue": "={{ $json.priority }}",
+                    "rightValue": "low",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Low"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1024,
+        -96
+      ],
+      "id": "8a297b92-6bc9-4ff8-b830-cf20e0cd7e48",
+      "name": "RouteByPriority"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5f66536c-0beb-4a3e-a5e7-d2f4c315d6d9",
+              "name": "name",
+              "value": "={{ $('ReceiveLead').item.json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "43fa9d5c-40a9-40f5-814c-f4abb385e6bc",
+              "name": "email",
+              "value": "={{ $('ReceiveLead').item.json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "74773bb8-b4e9-44e2-ae35-086139304dd1",
+              "name": "company",
+              "value": "={{ $('ReceiveLead').item.json.body.company }}",
+              "type": "string"
+            },
+            {
+              "id": "f498c963-521f-49a7-bdea-b1bf8b923527",
+              "name": "budget",
+              "value": "={{ $('ReceiveLead').item.json.body.budget }}",
+              "type": "number"
+            },
+            {
+              "id": "0cdbc02e-ea9d-4325-9774-dfe41976344d",
+              "name": "lead_score",
+              "value": "={{ $json.lead_score }}",
+              "type": "number"
+            },
+            {
+              "id": "4f5cb80a-a0a0-4f6c-b5aa-3edb4e686e85",
+              "name": "priority",
+              "value": "={{ $json.priority }}",
+              "type": "string"
+            },
+            {
+              "id": "c3d765c3-a211-4d36-acfa-7c8a81cefde4",
+              "name": "intent",
+              "value": "={{ $json.intent }}",
+              "type": "string"
+            },
+            {
+              "id": "1f5d197a-0ad0-4abf-b6dd-f2366e8ba4a7",
+              "name": "reason",
+              "value": "={{ $json.reason }}",
+              "type": "string"
+            },
+            {
+              "id": "9e58854e-8ebe-4934-b72e-ac8c59f90cbf",
+              "name": "status",
+              "value": "sales_follow_up",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1248,
+        -224
+      ],
+      "id": "e77b22b1-a196-4c57-ab91-9d5c05b63121",
+      "name": "PrepareHotLead"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "portfolio_leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $json.name }}",
+            "email": "={{ $json.email }}",
+            "company": "={{ $json.company }}",
+            "budget": "={{ Number($json.budget) }}",
+            "priority": "={{ $json.priority }}",
+            "intent": "={{ $json.intent }}",
+            "reason": "={{ $json.reason }}",
+            "status": "={{ $json.status }}",
+            "created_at": "={{ $now }}",
+            "lead_score": "={{ Number($json.lead_score) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "budget",
+              "displayName": "budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "lead_score",
+              "displayName": "lead_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "intent",
+              "displayName": "intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1472,
+        -224
+      ],
+      "id": "687a214f-f1fc-4229-9a52-1e6eb2c081e8",
+      "name": "StoreHotLead"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a39baeb7-115b-46ee-8a4f-d97ca48bbf06",
+              "name": "name",
+              "value": "={{ $('ReceiveLead').item.json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "b80d6c3f-87fb-4b89-b199-22700dae091a",
+              "name": "email",
+              "value": "={{ $('ReceiveLead').item.json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "94d2fb63-4522-4705-a7e3-c5d43430599a",
+              "name": "company",
+              "value": "={{ $('ReceiveLead').item.json.body.company }}",
+              "type": "string"
+            },
+            {
+              "id": "554e5c76-3e4f-406b-98a5-e576e8e14b91",
+              "name": "lead_score",
+              "value": "={{ $json.lead_score }}",
+              "type": "number"
+            },
+            {
+              "id": "042f88e9-c11d-4c67-8a14-bf9d533f0569",
+              "name": "priority",
+              "value": "={{ $json.priority }}",
+              "type": "string"
+            },
+            {
+              "id": "8cb04851-5b29-4c9c-af7e-b8d2a1476091",
+              "name": "intent",
+              "value": "={{ $json.intent }}",
+              "type": "string"
+            },
+            {
+              "id": "b4d471f4-0840-4a7b-ace9-2fa414bb7d2b",
+              "name": "reason",
+              "value": "={{ $json.reason }}",
+              "type": "string"
+            },
+            {
+              "id": "2fccfe5d-78df-4ad0-a0ec-b15c97696949",
+              "name": "status",
+              "value": "nurture",
+              "type": "string"
+            },
+            {
+              "id": "f6c3187d-ed8a-4dd4-ad0c-5c5f0f2e4133",
+              "name": "budget",
+              "value": "={{ $('ReceiveLead').item.json.body.budget }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1248,
+        -32
+      ],
+      "id": "9fc6d7d3-4a47-46f6-b257-5b60dbce7d6a",
+      "name": "PrepareWarmLead"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "797ad51f-9931-49a9-a928-c731191c9d90",
+              "name": "name",
+              "value": "={{ $('ReceiveLead').item.json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "d18fb0bc-fa97-4614-91db-b92a0a96f226",
+              "name": "email",
+              "value": "={{ $('ReceiveLead').item.json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "614f1e08-1611-4f0f-9068-e9c7446209c2",
+              "name": "company",
+              "value": "={{ $('ReceiveLead').item.json.body.company }}",
+              "type": "string"
+            },
+            {
+              "id": "d8ce018b-1223-4de8-80c7-669b76518f0d",
+              "name": "budget",
+              "value": "={{ $('ReceiveLead').item.json.body.budget }}",
+              "type": "number"
+            },
+            {
+              "id": "c5f93b11-c60d-4f94-b9be-741431e5b277",
+              "name": "lead_score",
+              "value": "={{ $json.lead_score }}",
+              "type": "number"
+            },
+            {
+              "id": "303bdfd1-236b-41bf-b786-9361b516885f",
+              "name": "priority",
+              "value": "={{ $json.priority }}",
+              "type": "string"
+            },
+            {
+              "id": "3c61d170-00d5-4700-8c12-4f59005878b2",
+              "name": "intent",
+              "value": "={{ $json.intent }}",
+              "type": "string"
+            },
+            {
+              "id": "355b80ad-276f-4d77-9f88-f67d127f7826",
+              "name": "reason",
+              "value": "={{ $json.reason }}",
+              "type": "string"
+            },
+            {
+              "id": "52810e4e-d5a6-41a5-b723-a9965d8addec",
+              "name": "status",
+              "value": "low_priority",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1248,
+        160
+      ],
+      "id": "ee730dcd-4e24-459b-a902-191087047abc",
+      "name": "PrepareLowLead"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "portfolio_leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $('ReceiveLead').item.json.body.name }}",
+            "email": "={{ $('ReceiveLead').item.json.body.email }}",
+            "company": "={{ $('ReceiveLead').item.json.body.company }}",
+            "budget": "={{ Number($json.budget) }}",
+            "lead_score": "={{ Number($json.lead_score) }}",
+            "priority": "={{ $json.priority }}",
+            "intent": "={{ $json.intent }}",
+            "reason": "={{ $json.reason }}",
+            "status": "nurture",
+            "created_at": "={{ $now }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "budget",
+              "displayName": "budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "lead_score",
+              "displayName": "lead_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "intent",
+              "displayName": "intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1472,
+        -32
+      ],
+      "id": "803bd7c0-1b6e-4037-a54c-48e5d0a031dd",
+      "name": "StoreWarmLead"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "portfolio_leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $('ReceiveLead').item.json.body.name }}",
+            "email": "={{ $('ReceiveLead').item.json.body.email }}",
+            "company": "={{ $('ReceiveLead').item.json.body.company }}",
+            "budget": "={{ Number($json.budget) }}",
+            "lead_score": "={{ Number($json.lead_score) }}",
+            "priority": "={{ $json.priority }}",
+            "intent": "={{ $json.intent }}",
+            "reason": "={{ $json.reason }}",
+            "created_at": "={{ $now }}",
+            "status": "low_priority"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "budget",
+              "displayName": "budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "lead_score",
+              "displayName": "lead_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "intent",
+              "displayName": "intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1472,
+        160
+      ],
+      "id": "59eb2330-a8f1-4137-89f2-744c99e95c32",
+      "name": "StoreLowLead"
+    },
+    {
+      "parameters": {
+        "toRecipients": "sales@example.com",
+        "subject": "=🔥 HOT LEAD — {{ $json.company }}",
+        "bodyContent": "=🔥 NEW HOT LEAD\n\nName: {{ $json.name }}\nCompany: {{ $json.company }}\nEmail: {{ $json.email }}\nBudget: £{{ $json.budget }}\nLead Score: {{ $json.lead_score }}/100\n\nIntent: {{ $json.intent }}\n\nAI Assessment:\n{{ $json.reason }}\n\nACTION: Follow up immediately.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1696,
+        -224
+      ],
+      "id": "81bd1987-0f6b-42cf-9412-f599f3756ba4",
+      "name": "NotifySalesHotLead"
+    },
+    {
+      "parameters": {
+        "content": "Hot: High-intent leads → store + immediate sales alert",
+        "height": 80,
+        "width": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        -416
+      ],
+      "id": "6990538c-6790-48f2-9ce7-0dcdad11a121",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Warm: Medium-intent leads → store for nurture",
+        "height": 80,
+        "width": 224
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        -416
+      ],
+      "id": "89e7d36c-d793-4a97-b0a4-df0d33c94e5f",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Low: Low-intent leads → store without interrupting sales",
+        "height": 80
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1664,
+        -416
+      ],
+      "id": "42756ae6-4850-4cd8-a29e-6911b1ba97cf",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4eb1fc8d-adee-490c-9cea-168b3888bd02",
+              "name": "status",
+              "value": "rejected",
+              "type": "string"
+            },
+            {
+              "id": "013dffdb-dcce-42a4-bd21-daf6121ba81d",
+              "name": "error",
+              "value": "Missing required lead fields",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        512,
+        208
+      ],
+      "id": "df215ecc-4b53-4725-9dd5-481a52f5f0d1",
+      "name": "PrepareValidationError"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"accepted\",\n  \"message\": \"Lead processed successfully\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1920,
+        -224
+      ],
+      "id": "aacfdec4-c4d2-45bb-afa0-01d176d3c6ec",
+      "name": "RespondHotSuccess"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"accepted\",\n  \"message\": \"Lead processed successfully\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1696,
+        -32
+      ],
+      "id": "e796edff-cd5b-408e-ae09-0c9566e22152",
+      "name": "RespondWarmSuccess"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"accepted\",\n  \"message\": \"Lead processed successfully\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1696,
+        160
+      ],
+      "id": "3f280071-be32-44ae-92bc-eef4af8c0f51",
+      "name": "RespondLowSuccess"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"rejected\",\n  \"error\": \"Missing required lead fields\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        800,
+        208
+      ],
+      "id": "2b536a9f-e4b4-4d82-9201-65d186d09ecd",
+      "name": "RespondValidationError"
+    },
+    {
+      "parameters": {
+        "content": "AI Lead Intake & Qualification\nReceives inbound leads, validates required data, uses AI to score intent and priority, then automatically routes each lead.",
+        "height": 176,
+        "width": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        448,
+        -448
+      ],
+      "id": "be5b62da-03dd-4147-bb83-a1e30f1dd1e2",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Invalid Lead Handling\nRejects incomplete submissions with a clear HTTP 400 response before AI processing.",
+        "height": 144
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        608,
+        352
+      ],
+      "id": "f2236ae9-c78f-443e-b887-ad41448ac95f",
+      "name": "Sticky Note4"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "ReceiveLead": {
+      "main": [
+        [
+          {
+            "node": "ValidateLead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ValidateLead": {
+      "main": [
+        [
+          {
+            "node": "QualifyLeadAI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepareValidationError",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "QualifyLeadAI",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QualifyLeadAI": {
+      "main": [
+        [
+          {
+            "node": "ParseAIResult",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParseAIResult": {
+      "main": [
+        [
+          {
+            "node": "RouteByPriority",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RouteByPriority": {
+      "main": [
+        [
+          {
+            "node": "PrepareHotLead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepareWarmLead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PrepareLowLead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareHotLead": {
+      "main": [
+        [
+          {
+            "node": "StoreHotLead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StoreHotLead": {
+      "main": [
+        [
+          {
+            "node": "NotifySalesHotLead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareWarmLead": {
+      "main": [
+        [
+          {
+            "node": "StoreWarmLead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareLowLead": {
+      "main": [
+        [
+          {
+            "node": "StoreLowLead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareValidationError": {
+      "main": [
+        [
+          {
+            "node": "RespondValidationError",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NotifySalesHotLead": {
+      "main": [
+        [
+          {
+            "node": "RespondHotSuccess",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StoreWarmLead": {
+      "main": [
+        [
+          {
+            "node": "RespondWarmSuccess",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StoreLowLead": {
+      "main": [
+        [
+          {
+            "node": "RespondLowSuccess",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}
