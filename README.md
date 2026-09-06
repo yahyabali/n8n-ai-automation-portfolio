@@ -1,132 +1,78 @@
-# AI Lead Qualification & Routing Automation — n8n
+# AI Lead Qualification & Routing — n8n
 
-A production-style n8n automation that receives inbound leads, validates them, uses AI to qualify and score them, routes them by priority, stores structured lead data, and alerts sales when a high-value lead arrives.
+A tested portfolio demonstration that turns inbound enquiries into structured, prioritised leads. Built with n8n, OpenAI, webhooks, JavaScript, Data Tables and Microsoft Outlook.
 
-## Business Problem
+**Quick links:** [Workflow JSON](claudePortfolio_01_-_AI_Lead_Qualification_-_PUBLIC.json) · [Test results](#tested-scenarios) · [Setup](#setup) · [Limitations](#current-limitations)
 
-Businesses often receive leads through website forms, contact pages, or enquiry systems, but someone still has to manually:
+![Overview of the n8n lead qualification and routing workflow](portfolio%20publish.png)
 
-- check whether the lead information is complete
-- read the enquiry
-- judge how serious the lead is
-- decide whether sales should respond immediately
-- store the lead details
-- notify the right person
+## Business problem
 
-This workflow automates that process.
+Manually checking every enquiry, judging its intent, recording it and alerting sales takes time. This workflow demonstrates how to automate those steps so high-priority enquiries can receive attention while other leads remain available for follow-up. Business impact has not been measured in a client deployment.
 
-## What the Automation Does
+## What it does
 
-1. Receives a new lead through a POST webhook
-2. Validates required fields before using AI
-3. Sends the lead details to GPT-4o-mini
-4. Produces structured qualification data:
-   - lead score
-   - priority
-   - intent
-   - qualification reason
-5. Routes the lead automatically:
-   - **Hot** → store + immediate sales notification
-   - **Warm** → store for nurture
-   - **Low** → store without interrupting sales
-6. Saves the structured lead data to an n8n Data Table
-7. Sends a Microsoft Outlook notification for hot leads
-8. Returns a success response to valid submissions
-9. Rejects incomplete leads with a clear HTTP 400 response before AI processing
+1. Receives a lead through a POST webhook.
+2. Checks required fields before calling AI; incomplete submissions receive HTTP 400.
+3. Uses GPT-4o-mini to produce a lead score, priority, intent and qualification reason.
+4. Parses the JSON output and converts budget and score to numbers.
+5. Routes the lead into a hot, warm or low-priority branch.
+6. Stores structured lead data in an n8n Data Table.
+7. Sends an Outlook notification for hot leads and returns a success response for valid submissions.
 
-## Business Outcome
+| Route | Action |
+| --- | --- |
+| Hot | Store lead → send sales notification → return success |
+| Warm | Store for later nurture → return success |
+| Low | Store as low priority → return success |
+| Invalid | Reject before AI processing → return HTTP 400 |
 
-The workflow removes the need for someone to manually review every inbound enquiry.
+Warm leads are stored for nurture; automated follow-up messages are not part of this version. CRM integration is a possible extension, not an implemented feature.
 
-High-intent leads can be surfaced immediately, while lower-priority enquiries are still captured and stored for later follow-up.
+## Tested scenarios
 
-This architecture could be adapted for:
+The following end-to-end results were recorded on **3 September 2026**. These are the original project results, not a new test run of the public export.
 
-- website lead qualification
-- CRM lead routing
-- sales inbox automation
-- consultation enquiries
-- customer support triage
-- appointment leads
-- AI-assisted intake forms
-
-## Tested Scenarios
-
-The workflow was tested end-to-end on 3 September 2026.
-
-| Test | Result |
-|---|---|
-| Hot lead | Routed as hot, stored successfully, sales email received, success response returned |
+| Test | Recorded result |
+| --- | --- |
+| Hot lead | Routed as hot, stored successfully, sales email received with expected lead information, success response returned |
 | Warm lead | Routed as warm, stored for nurture, success response returned |
 | Low lead | Routed as low priority, stored successfully, success response returned |
-| Missing required fields | Rejected before AI processing with HTTP 400 response |
+| Missing required fields | Rejected before AI processing with HTTP 400 |
 
-The hot-lead test also confirmed that the notification email contained the expected lead information.
+## Technology and demonstrated skills
 
-## Reliability Features
+- n8n workflow design and conditional routing
+- Webhook intake and required-field validation
+- OpenAI GPT-4o-mini classification and scoring
+- JavaScript, JSON parsing and numeric conversion
+- n8n Data Tables for persistent storage
+- Microsoft Outlook notifications and webhook responses
 
-- Required-field validation before AI processing
-- Structured JSON AI output
-- Separate hot, warm, and low routing paths
-- Numeric conversion for budget and lead score
-- Persistent lead storage
-- Separate invalid-lead handling
-- Dedicated webhook responses
-- Sanitized public workflow with no private credentials or account IDs
+**Training:** n8n Foundations certification.
 
-## Technology
+## Repository files
 
-- n8n
-- OpenAI GPT-4o-mini
-- Webhooks
-- JavaScript
-- JSON
-- n8n Data Tables
-- Microsoft Outlook
-- Conditional routing
-
-## Workflow Logic
-
-**Webhook → Validation → AI Qualification → JSON Parsing → Priority Routing**
-
-### Hot
-Store lead → Send immediate sales notification → Return success response
-
-### Warm
-Store for nurture → Return success response
-
-### Low
-Store as low priority → Return success response
-
-### Invalid
-Reject before AI processing → Return HTTP 400 response
-
-## Public Workflow
-
-The sanitized n8n workflow JSON is included in this repository.
-
-The public export intentionally removes:
-
-- credentials
-- internal Data Table IDs
-- webhook IDs
-- instance metadata
-- personal email addresses
-
-The notification recipient is replaced with:
-
-`sales@example.com`
+| File | Purpose |
+| --- | --- |
+| [Public workflow JSON](claudePortfolio_01_-_AI_Lead_Qualification_-_PUBLIC.json) | Importable workflow structure; configure your own connections before testing |
+| [Workflow screenshot](portfolio%20publish.png) | Visual overview of the workflow |
+| README.md | Case study, recorded tests, setup and limitations |
 
 ## Setup
 
-1. Import the public workflow JSON into n8n
-2. Connect an OpenAI credential
-3. Connect a Microsoft Outlook credential
-4. Create an n8n Data Table called `portfolio_leads`
-5. Use these columns:
+The public export is sanitised: credentials, internal Data Table IDs, webhook IDs, instance metadata and personal email addresses were removed. The notification recipient is a placeholder (`sales@example.com`).
+
+1. Download the workflow JSON linked above and import it into n8n.
+2. Connect your own OpenAI and Microsoft Outlook credentials.
+3. Create an n8n Data Table called `portfolio_leads` with the columns below.
+4. Select your table in `StoreHotLead`, `StoreWarmLead` and `StoreLowLead`, and check the field mappings.
+5. Replace `sales@example.com` with your intended test recipient.
+6. Use the imported Webhook node’s test URL and inspect the validation node for the required input fields.
+7. Test hot, warm, low and missing-field submissions with synthetic data. Confirm the HTTP response, stored row and hot-lead email before publishing.
 
 | Column | Type |
-|---|---|
+| --- | --- |
 | name | String |
 | email | String |
 | company | String |
@@ -138,26 +84,19 @@ The notification recipient is replaced with:
 | status | String |
 | created_at | Date |
 
-6. Select that table in the StoreHotLead, StoreWarmLead, and StoreLowLead nodes
-7. Replace `sales@example.com` with the desired notification recipient
-8. Test the workflow before publishing
+Testing uses your connected services; OpenAI usage may incur charges and the hot route sends an email to the configured recipient.
 
-## Current Limitations
+## Current limitations
 
-This is a tested portfolio demonstration rather than a full production deployment.
+This is a tested portfolio demonstration, not a full production deployment.
 
-Current limitations include:
+- Required-field checks do not fully validate every input type.
+- Malformed AI output does not yet have a recovery route.
+- Unexpected priority values do not yet have a fallback route.
+- Retries and duplicate prevention have not yet been added.
+- Load testing has not been performed.
+- The sanitised export needs your own credentials, table selection and testing before use.
 
-- validation checks required fields but does not fully validate every input type
-- malformed AI output does not yet have a recovery route
-- unexpected priority values do not yet have a fallback route
-- retries and duplicate prevention have not yet been added
-- load testing has not been performed
+## Relevant project work
 
-## Why I Built This
-
-The goal was to demonstrate a complete business automation flow rather than simply connecting nodes together:
-
-**receive data → validate it → use AI where useful → structure the result → route it → store it → trigger the correct business action**
-
-This is the same approach I would use when designing a client automation around leads, CRM workflows, customer enquiries, or internal operations.
+This project demonstrates skills relevant to small, clearly scoped n8n tasks: webhook intake, field mapping, AI classification, lead routing, table storage and email notifications. Extensions such as CRM integration, follow-up sequences and production hardening need separate implementation and testing.
